@@ -5,13 +5,14 @@ const authRouter = require("./auth/auth.route");
 const postRouter = require("./posts/post.route");
 const isAuth = require("./middlewares/isauth.middleware");
 const connecttodb = require("./db/connecttodb");
-const { upload, deletefromcloudinary } = require("./config/cloudinary.config");
 const swagger = require("./swagger");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const cookieParser = require("cookie-parser");
 const dashboardRouter = require("./routes/dashboard");
+const { upload } = require("./config/clodinary.config");
 
+const app = express();
 
 
 app.use(express.json());
@@ -19,7 +20,6 @@ app.use(cookieParser());
 
 
 
-const app = express();
 
 // Middlewares
 app.use(cors());
