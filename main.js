@@ -36,6 +36,9 @@ app.use("/auth", authRouter);
 app.use("/posts", isAuth, postRouter);
 app.use("/users", isAuth, userRouter);
 
+const dashboardRouter = require("./routes/dashboard.route");
+app.use("/dashboard", dashboardRouter);
+
 // Simple root route
 app.get("/", (req, res) => {
   res.send("Server is running");
