@@ -116,6 +116,7 @@ if (!existUser) {
     const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' })
 
 res.redirect(`${process.env.FRONT_END_URL}/?token=${token}`);
+
 })
 
 
