@@ -1,5 +1,5 @@
-const express = require("express");
 const cors = require("cors");
+const express = require("express");
 const userRouter = require("./users/user.route");
 const authRouter = require("./auth/auth.route");
 const postRouter = require("./posts/post.route");
@@ -14,6 +14,7 @@ const { upload } = require("./config/clodinary.config");
 
 const app = express();
 
+app.use(cors());
 
 app.use(express.json());
 app.use(cookieParser());
@@ -22,7 +23,6 @@ app.use(cookieParser());
 
 
 // Middlewares
-app.use(cors());
 
 app.use(express.json());
 app.use(express.static("uploads"));
