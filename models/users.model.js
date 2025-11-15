@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: false,
         select: false
     },
     posts: {
@@ -22,11 +22,11 @@ const userSchema = new mongoose.Schema({
         default: "user"
     },
 
-    name: {
+    fullname: {
         type: String,
         default: ""
     },
-    profileImage: {
+    avatar: {
         type: String,   
         default: ""
     }
