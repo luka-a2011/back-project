@@ -1,7 +1,7 @@
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-require("dotenv").config();  // ✅ fixed
+require("dotenv").config();
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
@@ -10,7 +10,7 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-   cloudinary: cloudinary,
+   cloudinary,
    params: {
        folder: "uploads",
        allowed_formats: ["jpg", "png", "svg", "jpeg"]
@@ -19,13 +19,13 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-const deletefromcloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicId) => {
     try {
         const result = await cloudinary.uploader.destroy(publicId);
-        console.log("delete result", result);
+        console.log("Cloudinary delete:", result);
     } catch (error) {
-        console.log("some error", error);
+        console.log("Cloudinary delete error:", error);
     }
-}
+};
 
-module.exports = { upload, deletefromcloudinary };
+module.exports = { upload, deleteFromCloudinary };
