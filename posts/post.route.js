@@ -2,6 +2,7 @@ const { Router } = require("express");
 const postModels = require("../models/post.model");
 const { isValidObjectId } = require("mongoose");
 const { upload, deletefromcloudinary } = require("../config/clodinary.config");
+const isAuth = require("../middlewares/isauth.middleware");
 
 
 
@@ -103,7 +104,7 @@ postRouter.get("/", async (req, res) => {
  *                   type: string
  *                   example: fill in user-id
  */
-postRouter.post("/", upload.single("image"), async (req, res) => {
+postRouter.post("/",isAuth, upload.single("image"), async (req, res) => {
     const { descriptione, Location } = req.body;
     const image = req.file?.path;
 
@@ -169,7 +170,7 @@ postRouter.post("/", upload.single("image"), async (req, res) => {
  *                   type: string
  *                   example: no permission
  */
-postRouter.delete("/:id", async (req, res) => {
+postRouter.delete("/:id", isAuth, async (req, res) => {
     const {id} = req.params
     if(!isValidObjectId()){
         return  res.status(400).json({message: "invalid id"})
@@ -190,53 +191,5 @@ postRouter.delete("/:id", async (req, res) => {
     res.status(200).json({message: "deleted"})
 })
 
-
-/**
- * @swagger
- * /posts/{postId}/comments:
- *   get:
- *     summary: Get all comments for a specific post
- *     tags:
- *       - Posts
- *     description: Retrieve all comments for the post with the specified ID. Each comment includes the author's fullname and email.
- *     parameters:
- *       - in: path
- *         name: postId
- *         required: true
- *         description: The ID of the post whose comments are being fetched
- *         schema:
- *           type: string
- *           example: 60f6f5f6e1f1c8a9d8f0e5b2
- *     responses:
- *       200:
- *         description: A list of comments for the post
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   author:
- *                     type: object
- *                     properties:
- *                       fullname:
- *                         type: string
- *                         example: John Doe
- *                       email:
- *                         type: string
- *                         example: johndoe@example.com
- *                   content:
- *                     type: string
- *                     example: This is a comment on the post
- *                   createdAt:
- *                     type: string
- *                     format: date-time
- *                     example: '2025-06-20T15:00:00.000Z'
- *       404:
- *         description: Post not found
- *       500:
- *         description: Server error
- */
 
 module.exports = postRouter

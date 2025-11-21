@@ -33,7 +33,7 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.use("/auth", authRouter);
-app.use("/posts", isAuth, postRouter);
+app.use("/posts", postRouter);
 app.use("/users", isAuth, userRouter);
 
 app.use("/dashboard", dashboardRouter);
