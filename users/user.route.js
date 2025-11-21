@@ -86,23 +86,26 @@ userRouter.get('/', async (req, res) => {
  *                   type: string
  *                   example: "You don't have permission"
  */
-userRouter.put('/', upload.single('avatar') , async (req, res) => {
-    const id = req.userId
-    const {email} = req.body
-    const filePath = req.file.path
-    const user = await userModel.findById(id)
-    if(filePath){
-        const deleteId = user.avatar?.split('uploads/')[1]
-        const id = deleteId.split('.')[0]
-        console.log(deleteId, "deleteId")
-        console.log(id, "id")
-        await deleteFromCloudinary(`uploads/${id}`)
+userRouter.put("/", upload.single("avatar"), async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (req.body.fullName) user.fullName = req.body.fullName;
+    if (req.file) {
+      if (user.avatar) await deleteFromCloudinary(user.avatarPublicId);
+      user.avatar = req.file.path; // Cloudinary URL
+      user.avatarPublicId = req.file.filename; // optional
     }
 
-    await userModel.findByIdAndUpdate(id, {email, avatar: filePath })
-    // await deleteFromCloudinary(req.file.filename)
-    res.status(200).json({message: "user updated successfully"})
-})
+    await user.save();
+    res.json({ message: "Profile updated successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Update failed" });
+  }
+});
+
 
 /**
  * @swagger
