@@ -35,8 +35,8 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(specs));
 // Routes
 app.use("/auth", authRouter);
 app.use("/posts", postRouter);
-app.use("/users", isAuth, userRouter);
-app.use("/admin", adminRouter);
+app.use("/api/users", isAuth, userRouter);
+app.use("/admin", adminRouter); 
 
 
 app.use("/dashboard", dashboardRouter);
