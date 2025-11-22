@@ -25,21 +25,22 @@ userRouter.get("/", isAuth, async (req, res) => {
 });
 
 // UPDATE user profile
+// UPDATE user profile
 userRouter.put("/", isAuth, upload.single("avatar"), async (req, res) => {
   try {
     const user = await userModel.findById(req.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (req.body.fullName) user.fullName = req.body.fullName;
+    // Update fullName properly
+    if (req.body.fullName) {
+      user.fullName = req.body.fullName; // make sure your schema has `fullName`
+    }
 
     if (req.file) {
       if (user.avatarPublicId) await deleteFromCloudinary(user.avatarPublicId);
       user.avatar = req.file.path; // Cloudinary URL
       user.avatarPublicId = req.file.filename; // optional
     }
-
-    // Also allow updating avatar via JSON (from frontend PUT request without file)
-    if (req.body.avatar) user.avatar = req.body.avatar;
 
     await user.save();
     res.json({ message: "Profile updated successfully", user });
@@ -48,6 +49,8 @@ userRouter.put("/", isAuth, upload.single("avatar"), async (req, res) => {
     res.status(500).json({ error: "Update failed" });
   }
 });
+
+
 
 // DELETE user
 userRouter.delete("/:id", isAuth, async (req, res) => {
