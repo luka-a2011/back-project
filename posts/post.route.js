@@ -6,7 +6,7 @@ const isAuth = require("../middlewares/isauth.middleware");
 
 const postRouter = Router();
 
-
+// GET all posts (admin or general view)
 postRouter.get("/", async (req, res) => {
   try {
     const posts = await postModels
@@ -21,7 +21,22 @@ postRouter.get("/", async (req, res) => {
   }
 });
 
+// GET posts of current logged-in user
+postRouter.get("/my-posts", isAuth, async (req, res) => {
+  try {
+    const posts = await postModels
+      .find({ author: req.userId })
+      .sort({ _id: -1 })
+      .populate({ path: "author", select: "fullName email" });
 
+    res.status(200).json(posts);
+  } catch (err) {
+    console.error("GET /posts/my-posts error:", err);
+    res.status(500).json({ message: "Server error getting user's posts" });
+  }
+});
+
+// CREATE new post
 postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
   try {
     const { descriptione, Location } = req.body;
@@ -45,7 +60,7 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
   }
 });
 
-
+// DELETE a post
 postRouter.delete("/:id", isAuth, async (req, res) => {
   try {
     const { id } = req.params;
