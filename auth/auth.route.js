@@ -77,12 +77,6 @@ authRouter.post("/sign-in", async (req, res) => {
   const payload = { userId: existUser._id, role: existUser.role };
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 24 * 60 * 60 * 1000,
-  });
-
   res.json({ token, role: existUser.role });
 });
 
