@@ -3,91 +3,58 @@ const userSchema = require("../models/users.model");
 const userModel = require("../models/users.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const passport = require("../config/google.stategy")
+const passport = require("../config/google.stategy");
 const isAuth = require("../middlewares/isauth.middleware");
-require("dotenv").config()
-const authRouter = Router()
+require("dotenv").config();
 
+const authRouter = Router();
 
-
-
+// SIGN UP
 authRouter.post("/sign-up", async (req, res) => {
-    const { error } = userSchema.validate(req.body || {});
-    if (error) {
-        return res.status(400).json({ message: error.details[0].message });
-    }
+  const { error } = userSchema.validate(req.body || {});
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
 
-    const { fullname, email, password } = req.body;
+  const { fullName, email, password } = req.body;
 
-    const existUser = await userModel.findOne({ email });
-    if (existUser) {
-        return res.status(400).json({ message: "User already exists" });
-    }
-const hashedPass = await bcrypt.hash(password, 10);
+  const existUser = await userModel.findOne({ email });
+  if (existUser) {
+    return res.status(400).json({ message: "User already exists" });
+  }
 
-    const newUser = await userModel.create({ fullname, email, password: hashedPass });
+  const hashedPass = await bcrypt.hash(password, 10);
+  const newUser = await userModel.create({ fullName, email, password: hashedPass });
 
-    const payload = { userId: newUser._id, role: newUser.role };
-const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
-
-// Optionally save token to user in DB
-await userModel.findByIdAndUpdate(newUser._id, { token });
-
-// Send token and user info back
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  maxAge: 24 * 60 * 60 * 1000,
-});
-res.status(201).json({ token, userId: newUser._id, role: newUser.role });
-
-   
+  return res.status(201).json({ userId: newUser._id });
 });
 
-
-
-
-
-
+// GOOGLE AUTH
 authRouter.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 authRouter.get('/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
   let existUser = await userModel.findOne({ email: req.user.email });
 
   if (!existUser) {
-    // New user: default role = user
     existUser = await userModel.create({
       avatar: req.user.avatar,
       email: req.user.email,
-      fullname: req.user.fullname,
+      fullName: req.user.fullName,
       role: 'user',
     });
   } else {
-    // Update avatar but keep role
     await userModel.findByIdAndUpdate(existUser._id, { avatar: req.user.avatar });
   }
 
-  const payload = {
-    userId: existUser._id,
-    role: existUser.role,
-  };
+  await userModel.findByIdAndUpdate(existUser._id, { avatar: req.user.avatar });
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-
-  await userModel.findByIdAndUpdate(existUser._id, { token });
+  const payload = { userId: existUser._id, role: existUser.role };
+  const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
   res.redirect(`${process.env.FRONT_END_URL}/?token=${token}`);
 });
 
-
-
-
-
-
-
-
-
+// SIGN IN
 authRouter.post("/sign-in", async (req, res) => {
   const { email, password } = req.body;
 
@@ -95,7 +62,8 @@ authRouter.post("/sign-in", async (req, res) => {
     return res.status(400).json({ message: "Enter email and password." });
   }
 
-  const existUser = await userModel.findOne({ email }).select("+password role");
+  const existUser = await userModel.findOne({ email }).select("password role");
+  console.log("existUser:", existUser);
 
   if (!existUser) {
     return res.status(400).json({ message: "Email or password is invalid" });
@@ -106,15 +74,8 @@ authRouter.post("/sign-in", async (req, res) => {
     return res.status(400).json({ message: "Email or password invalid" });
   }
 
-  const payload = {
-    userId: existUser._id,
-    role: existUser.role,
-  };
-
+  const payload = { userId: existUser._id, role: existUser.role };
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
-
-
-  await userModel.findByIdAndUpdate(existUser._id, { token });
 
   res.cookie("token", token, {
     httpOnly: true,
@@ -125,12 +86,10 @@ authRouter.post("/sign-in", async (req, res) => {
   res.json({ token, role: existUser.role });
 });
 
-
-
-
+// CURRENT USER
 authRouter.get("/current-user", isAuth, async (req, res) => {
-    const user = await userModel.findById(req.userId)
-    res.json(user)
-})
+  const user = await userModel.findById(req.userId);
+  res.json(user);
+});
 
-module.exports = authRouter
+module.exports = authRouter;
