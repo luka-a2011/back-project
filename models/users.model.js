@@ -20,22 +20,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin"],
         default: "user"
-    },  
-
-    fullName: {
-        type: String,
-        default: "",
-        select: false
     },
-    avatar: {
-        type: String,   
+
+    fullName: {        
+        type: String,
         default: ""
     },
-    token: {
-  type: String,
-  default: ""
-}
 
+    avatar: {
+        type: String,
+        default: ""
+    },
+
+    token: {
+        type: String,
+        default: ""
+    }
 });
 
 module.exports = mongoose.model("users", userSchema);
+
