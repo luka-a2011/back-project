@@ -23,9 +23,9 @@ authRouter.post("/sign-up", async (req, res) => {
     if (existUser) {
         return res.status(400).json({ message: "User already exists" });
     }
+const hashedPass = await bcrypt.hash(password, 10);
 
-
-    const newUser = await userModel.create({ fullname, email, password });
+    const newUser = await userModel.create({ fullname, email, password: hashedPass });
 
     return res.status(201).json({ userId: newUser._id });
 });
