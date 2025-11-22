@@ -1,11 +1,16 @@
-// admin.routes.js
+
 const { Router } = require("express");
 const userModel = require("../models/users.model");
+const isAuth = require("../middlewares/isauth.middleware"); 
 const router = Router();
 
-// Get all users
-router.get("/users", async (req, res) => {
+
+router.get("/users", isAuth, async (req, res) => {
   try {
+    if (req.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const users = await userModel.find({}, "fullname email password role");
     res.json({ users });
   } catch (err) {
@@ -14,11 +19,16 @@ router.get("/users", async (req, res) => {
   }
 });
 
-// Delete user
-router.delete("/users/:id", async (req, res) => {
+
+router.delete("/users/:id", isAuth, async (req, res) => {
   try {
+    if (req.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const deletedUser = await userModel.findByIdAndDelete(req.params.id);
     if (!deletedUser) return res.status(404).json({ message: "User not found" });
+
     res.json({ success: true, message: "User deleted" });
   } catch (err) {
     console.error(err);
