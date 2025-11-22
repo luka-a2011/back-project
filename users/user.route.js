@@ -31,9 +31,9 @@ userRouter.put("/", isAuth, upload.single("avatar"), async (req, res) => {
     const user = await userModel.findById(req.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Update fullName properly
-    if (req.body.fullName) {
-      user.fullName = req.body.fullName; // make sure your schema has `fullName`
+    // Update fullname properly
+    if (req.body.fullname) {
+      user.fullname = req.body.fullname; // make sure your schema has `fullname`
     }
 
     if (req.file) {

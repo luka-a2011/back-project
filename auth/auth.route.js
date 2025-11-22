@@ -16,7 +16,7 @@ authRouter.post("/sign-up", async (req, res) => {
     return res.status(400).json({ message: error.details[0].message });
   }
 
-  const { fullName, email, password } = req.body;
+  const { fullname, email, password } = req.body;
 
   const existUser = await userModel.findOne({ email });
   if (existUser) {
@@ -24,7 +24,7 @@ authRouter.post("/sign-up", async (req, res) => {
   }
 
   const hashedPass = await bcrypt.hash(password, 10);
-  const newUser = await userModel.create({ fullName, email, password: hashedPass });
+  const newUser = await userModel.create({ fullname, email, password: hashedPass });
 
   return res.status(201).json({ userId: newUser._id });
 });
@@ -39,7 +39,7 @@ authRouter.get('/google/callback', passport.authenticate('google', { session: fa
     existUser = await userModel.create({
       avatar: req.user.avatar,
       email: req.user.email,
-      fullName: req.user.fullName,
+      fullname: req.user.fullname,
       role: 'user',
     });
   } else {
