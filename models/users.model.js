@@ -24,7 +24,8 @@ const userSchema = new mongoose.Schema({
 
     fullname: {
         type: String,
-        default: ""
+        default: "",
+        select: false
     },
     avatar: {
         type: String,   
