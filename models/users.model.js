@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
         default: "user"
     },  
 
-    fullname: {
+    fullName: {
         type: String,
         default: "",
         select: false
