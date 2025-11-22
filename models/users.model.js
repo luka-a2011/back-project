@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin"],
         default: "user"
-    },
+    },  
 
     fullname: {
         type: String,
@@ -29,7 +29,12 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,   
         default: ""
-    }
+    },
+    token: {
+  type: String,
+  default: ""
+}
+
 });
 
 module.exports = mongoose.model("users", userSchema);

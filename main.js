@@ -11,6 +11,7 @@ const swaggerUi = require("swagger-ui-express");
 const cookieParser = require("cookie-parser");
 const dashboardRouter = require("./routes/dashboard");
 const { upload } = require("./config/clodinary.config");
+const adminRouter = require("./routes/admin.route");
 
 const app = express();
 
@@ -35,6 +36,8 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(specs));
 app.use("/auth", authRouter);
 app.use("/posts", isAuth, postRouter);
 app.use("/users", isAuth, userRouter);
+app.use("/admin", adminRouter);
+
 
 app.use("/dashboard", dashboardRouter);
 
