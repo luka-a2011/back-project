@@ -27,7 +27,21 @@ const hashedPass = await bcrypt.hash(password, 10);
 
     const newUser = await userModel.create({ fullname, email, password: hashedPass });
 
-    return res.status(201).json({ userId: newUser._id });
+    const payload = { userId: newUser._id, role: newUser.role };
+const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
+
+// Optionally save token to user in DB
+await userModel.findByIdAndUpdate(newUser._id, { token });
+
+// Send token and user info back
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  maxAge: 24 * 60 * 60 * 1000,
+});
+res.status(201).json({ token, userId: newUser._id, role: newUser.role });
+
+   
 });
 
 
