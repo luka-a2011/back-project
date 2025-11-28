@@ -1,10 +1,11 @@
 const Joi = require('joi')
 
 const userSchema = Joi.object({
-    fullName: Joi.string().min(4).required(),
+    fullname: Joi.string().min(4).required(), // lowercase
     email: Joi.string().email().required(),
     password: Joi.string().min(6).max(20).required()
 })
+
 
 
 module.exports = userSchema
