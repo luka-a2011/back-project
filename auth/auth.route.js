@@ -15,7 +15,7 @@ authRouter.post('/sign-up', async (req, res) => {
     if (error) {
         return res.status(400).json(error)
     }
-    const { fullName, email, password } = req.body
+    const { fullname, email, password, role } = req.body
 
     const existUser = await userModel.findOne({ email })
     if (existUser) {
@@ -23,7 +23,7 @@ authRouter.post('/sign-up', async (req, res) => {
     }
 
     const hashedPass = await bcrypt.hash(password, 10)
-    await userModel.create({ fullName, password: hashedPass, email })
+    await userModel.create({ fullname, password: hashedPass, email, role })
     res.status(201).json({ message: "user regisgted successfully" })
 
 })
@@ -37,7 +37,7 @@ authRouter.get('/google/callback', passport.authenticate('google', {session: fal
         existUser = await userModel.create({
             avatar: req.user.avatar,
             email: req.user.email,
-            fullName: req.user.fullName,
+            fullname: req.user.fullname,
             role: 'user',
         })
     }
