@@ -1,10 +1,12 @@
 const Joi = require('joi')
 
 const userSchema = Joi.object({
-    fullname: Joi.string().min(4).required(), // lowercase
+    fullname: Joi.string().min(4).required(),
     email: Joi.string().email().required(),
-    password: Joi.string().min(6).max(20).required()
-})
+    password: Joi.string().min(6).max(20).required(),
+    accountType: Joi.string().valid("user", "admin").optional() // allow it
+});
+
 
 
 
