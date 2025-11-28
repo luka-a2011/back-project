@@ -24,7 +24,7 @@ authRouter.post('/sign-up', async (req, res) => {
 
     const hashedPass = await bcrypt.hash(password, 10)
     await userModel.create({ fullname, password: hashedPass, email, role })
-    res.status(201).json({ message: "user regisgted successfully" })
+    res.status(201).json({ message: "user registered successfully" })
 
 })
 
@@ -50,7 +50,7 @@ authRouter.get('/google/callback', passport.authenticate('google', {session: fal
 
     const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' })
 
-    res.redirect(`${process.env.FRONT_END_URL}/sign-in?token=${token}`)
+    res.redirect(`${process.env.FRONT_END_URL}/?token=${token}`)
 })
 
 
