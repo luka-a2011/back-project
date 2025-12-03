@@ -8,7 +8,7 @@ passport.use(new GoogleStrategy({
     callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['email', 'profile']
 }, async function(accessToken, refreshToken, profile, done){
-    done(null, {email: profile.emails[0].value, fullName: profile.displayName, avatar: profile.photos[0].value})
+    done(null, {email: profile.emails[0].value, fullname: profile.displayName, avatar: profile.photos[0].value})
 }) )
 
 
