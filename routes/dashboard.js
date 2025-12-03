@@ -1,7 +1,6 @@
 const { Router } = require("express");
 const userModel = require("../models/users.model");
-const reportModel = require("../models/report.model");
-const cleanupModel = require("../models/cleanup.model");
+const postModel = require("../models/post.model"); 
 
 const router = Router();
 
@@ -9,8 +8,8 @@ const router = Router();
 router.get("/stats", async (req, res) => {
   try {
     const usersCount = await userModel.countDocuments();
-    const reportsCount = await reportModel.countDocuments();
-    const cleanupsCount = await cleanupModel.countDocuments();
+    const reportsCount = await postModel.countDocuments();
+    const cleanupsCount = 0; 
 
     res.json({
       users: usersCount,

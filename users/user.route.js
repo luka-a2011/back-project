@@ -24,31 +24,32 @@ userRouter.get("/", isAuth, async (req, res) => {
   res.status(200).json(users);
 });
 
-// UPDATE user profile
-// UPDATE user profile
-userRouter.put("/", isAuth, upload.single("avatar"), async (req, res) => {
+
+userRouter.put("/", isAuth, async (req, res) => {
   try {
     const user = await userModel.findById(req.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Update fullname properly
-    if (req.body.fullname) {
-      user.fullname = req.body.fullname; // make sure your schema has `fullname`
-    }
+    // Update name
+    if (req.body.fullname) user.fullname = req.body.fullname;
 
-    if (req.file) {
-      if (user.avatarPublicId) await deleteFromCloudinary(user.avatarPublicId);
-      user.avatar = req.file.path; // Cloudinary URL
-      user.avatarPublicId = req.file.filename; // optional
+    // Update avatar (Cloudinary URL)
+    if (req.body.avatar) {
+      user.avatar = req.body.avatar;
     }
 
     await user.save();
-    res.json({ message: "Profile updated successfully", user });
+
+    res.json({
+      message: "Profile updated successfully",
+      user
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Update failed" });
   }
 });
+
 
 
 
@@ -68,6 +69,38 @@ userRouter.delete("/:id", isAuth, async (req, res) => {
   await postModel.deleteMany({ author: targetUserId });
 
   res.json({ message: "User deleted successfully" });
+});
+
+
+
+// ADMIN / Update any user by ID
+userRouter.put("/:id", isAuth, async (req, res) => {
+  try {
+    const requester = await userModel.findById(req.userId);
+    
+    if (!requester || requester.role !== "admin") {
+      return res.status(403).json({ error: "Only admin can update users" });
+    }
+    
+    const updatedUser = await userModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        fullname: req.body.fullname,
+        email: req.body.email,
+        role: req.body.role,
+      },
+      { new: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json({ message: "User updated", user: updatedUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update user" });
+  }
 });
 
 module.exports = userRouter;
