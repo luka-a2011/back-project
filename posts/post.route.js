@@ -52,26 +52,37 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
 postRouter.delete("/:id", isAuth, async (req, res) => {
   const { id } = req.params;
 
-  if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid post ID" });
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
+  }
 
   try {
     const post = await postModels.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    // Allow admin or author to delete
     if (post.author.toString() !== req.userId && req.role !== "admin") {
       return res.status(401).json({ message: "You don't have permission" });
     }
 
-    // Optionally delete image from Cloudinary
-    if (post.image) await deletefromcloudinary(post.image);
+    // Delete image from Cloudinary if exists
+    if (post.image) {
+      try {
+        await deletefromcloudinary(post.image);
+      } catch (err) {
+        console.warn("Cloudinary delete failed:", err);
+      }
+    }
 
     await postModels.findByIdAndDelete(id);
-    res.status(200).json({ message: "Post deleted successfully" });
+
+    return res.status(200).json({ message: "Post deleted successfully" });
   } catch (err) {
     console.error("DELETE /posts/:id error:", err);
-    res.status(500).json({ message: "Server error while deleting post" });
+    return res.status(500).json({ message: "Server error while deleting post" });
   }
 });
+
 
 
 
