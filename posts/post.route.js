@@ -50,19 +50,34 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
 });
 
 postRouter.delete('/:id', async (req, res) => {
-    const {id} = req.params
+    const {id} = req.params;
+    console.log("Delete request for ID:", id);
+    console.log("User ID:", req.userId);
+
     if(!isValidObjectId(id)){
-        return res.status(400).json({message: "id is invalid"})
+        return res.status(400).json({message: "id is invalid"});
     }
 
-    const post = await postModel.findById(id)
+    try {
+        const post = await postModel.findById(id);
+        console.log("Post found:", post);
 
-    if(post.author.toString() !== req.userId){
-        return res.status(401).json({message: 'you dont have permition'})
+        if(!post){
+            return res.status(404).json({message: "Post not found"});
+        }
+
+        if(post.author.toString() !== req.userId){
+            return res.status(401).json({message: 'You don\'t have permission'});
+        }
+
+        await postModel.findByIdAndDelete(id);
+        res.status(200).json({message: "Post deleted successfully"});
+    } catch (err) {
+        console.error("Delete error:", err);
+        res.status(500).json({message: "Server error"});
     }
+});
 
-    await postModel.findByIdAndDelete(id)
-    res.status(200).json({message: "post deleted successfully"})
-})
+
 
 module.exports = postRouter;
