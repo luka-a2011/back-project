@@ -49,33 +49,36 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
   }
 });
 
-postRouter.delete('/:id', async (req, res) => {
-    const {id} = req.params;
-    console.log("Delete request for ID:", id);
-    console.log("User ID:", req.userId);
+postRouter.delete("/:id", isAuth, async (req, res) => {
+  const { id } = req.params;
 
-    if(!isValidObjectId(id)){
-        return res.status(400).json({message: "id is invalid"});
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: "id is invalid" });
+  }
+
+  try {
+    const post = await postModels.findById(id); // use correct model
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
     }
 
-    try {
-        const post = await postModel.findById(id);
-        console.log("Post found:", post);
-
-        if(!post){
-            return res.status(404).json({message: "Post not found"});
-        }
-
-        if(post.author.toString() !== req.userId){
-            return res.status(401).json({message: 'You don\'t have permission'});
-        }
-
-        await postModel.findByIdAndDelete(id);
-        res.status(200).json({message: "Post deleted successfully"});
-    } catch (err) {
-        console.error("Delete error:", err);
-        res.status(500).json({message: "Server error"});
+    if (post.author.toString() !== req.userId) {
+      return res.status(401).json({ message: "You don't have permission" });
     }
+
+    // Optionally delete image from Cloudinary
+    if (post.image) {
+      await deletefromcloudinary(post.image); // if you have this function
+    }
+
+    await postModels.findByIdAndDelete(id); // use correct model
+    res.status(200).json({ message: "Post deleted successfully" });
+
+  } catch (err) {
+    console.error("DELETE /posts/:id error:", err);
+    res.status(500).json({ message: "Server error while deleting post" });
+  }
 });
 
 
