@@ -83,6 +83,20 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
   }
 });
 
+postRouter.put("/posts/:id/after-photo", isAuth, async (req, res) => {
+  try {
+    const post = await post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    post.afterImages.push(req.body.afterImage);
+    await post.save();
+
+    res.json({ message: "After photo added", post });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 
