@@ -20,7 +20,6 @@ const orderModel = require("./models/order.model.js");
 const app = express();   
 
 
-// ─────────────── Global Middleware ───────────────
 app.use(cors());
 
 
@@ -128,3 +127,4 @@ connecttodb().then(() => {
     console.log(`Server running on port ${PORT}`);
   });
 });
+  
