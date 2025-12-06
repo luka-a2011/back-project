@@ -1,22 +1,30 @@
-const jwt = require('jsonwebtoken')
-require('dotenv').config()
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
-const isAuth = async (req, res, next) => {
-    const headers = req.headers['authorization']
-    if(!headers) {
-        return res.status(401).json({message: "you dont have permition"})
-    }
+const isAuth = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    const [type, token] = headers.split(' ')
-    try{
-        const payload = await jwt.verify(token, process.env.JWT_SECRET)
-        req.userId = payload.userId
-        req.role = payload.role
+  const [type, token] = authHeader.split(' ');
 
-        next()
-    }catch(e){
-        return res.status(401).json({message: "you dont have permition"})
-    }
-}
+  if (!token || type !== "Bearer") {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-module.exports = isAuth
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Support both userId or id
+    req.userId = payload.userId || payload.id;
+    req.role = payload.role || "user";
+
+    next();
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
+module.exports = isAuth;

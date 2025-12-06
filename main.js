@@ -1,15 +1,17 @@
+require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
-const userRouter = require("./users/user.route");
-const authRouter = require("./auth/auth.route");
-const postRouter = require("./posts/post.route");
-const isAuth = require("./middlewares/isauth.middleware");
-const connecttodb = require("./db/connecttodb");
-const swagger = require("./swagger");
+const cookieParser = require("cookie-parser");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const cookieParser = require("cookie-parser");
+const connecttodb = require("./db/connecttodb");
+const swagger = require("./swagger");
+const authRouter = require("./auth/auth.route");
+const postRouter = require("./posts/post.route");
+const userRouter = require("./users/user.route");
 const dashboardRouter = require("./routes/dashboard");
+const adminRouter = require("./routes/admin.route");
+const isAuth = require("./middlewares/isauth.middleware");
 const { upload } = require("./config/clodinary.config");
 const adminRouter = require("./routes/admin.route");
 const stripeRouter = require('./stripe/stripe.route');
@@ -19,6 +21,7 @@ const orderModel = require("./models/order.model.js");
 const app = express();   
 
 
+// ─────────────── Global Middleware ───────────────
 app.use(cors());
 
 
@@ -113,7 +116,8 @@ app.get("/", (req, res) => {
 
 
 app.post("/uploads", upload.single("image"), (req, res) => {
-  res.send(req.file);
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+  res.status(201).json({ file: req.file });
 });
 
 
