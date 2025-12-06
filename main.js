@@ -10,7 +10,6 @@ const authRouter = require("./auth/auth.route");
 const postRouter = require("./posts/post.route");
 const userRouter = require("./users/user.route");
 const dashboardRouter = require("./routes/dashboard");
-const adminRouter = require("./routes/admin.route");
 const isAuth = require("./middlewares/isauth.middleware");
 const { upload } = require("./config/clodinary.config");
 const adminRouter = require("./routes/admin.route");
