@@ -135,35 +135,44 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
 /* ===========================
    TOGGLE REACTION (LIKE)
 =========================== */
-postRouter.post('/:id/reactions', isAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { type } = req.body;
+postRouter.post('/:id/reactions', async (req, res) => {
+    const id = req.params.id
+    const {type} = req.body
+    const supportReactionType = ['like', 'dislike']
+    if(!supportReactionType.includes(type)){
+        return res.status(400).json({error: "wrong reaction type"})
+    }
+    const post = await postModel.findById(id)
 
-    if (type !== 'like') return res.status(400).json({ error: "Invalid reaction type" });
+    const alreadyLikedIndex = post.reactions.likes.findIndex(el => el.toString() === req.userId)
+    const alreadyDislikedIndex = post.reactions.dislikes.findIndex(el => el.toString() === req.userId)
 
-    const post = await postModels.findById(id);
-    if (!post) return res.status(404).json({ error: "Post not found" });
-
-    // Ensure reactions object exists
-    if (!post.reactions) post.reactions = { likes: [] };
-
-    const index = post.reactions.likes.findIndex(userId => userId.toString() === req.userId);
-
-    if (index !== -1) {
-      post.reactions.likes.splice(index, 1);
-    } else {
-      post.reactions.likes.push(req.userId);
+    if(type === 'like'){
+        if(alreadyLikedIndex !== -1){
+            post.reactions.likes.splice(alreadyLikedIndex, 1)
+        }else{
+            post.reactions.likes.push(req.userId)
+        }
+    }
+    if(type === 'dislike'){
+        if(alreadyDislikedIndex !== -1){
+            post.reactions.dislikes.splice(alreadyDislikedIndex, 1)
+        }else{
+            post.reactions.dislikes.push(req.userId)
+        }
     }
 
-    await post.save();
+    if(alreadyLikedIndex !== -1 && type === 'dislike'){
+        post.reactions.likes.splice(alreadyLikedIndex, 1)
+    }
 
-    res.json({ message: "Reaction updated", likes: post.reactions.likes.length });
-  } catch (err) {
-    console.error("Reaction route error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+     if(alreadyDislikedIndex !== -1 && type === 'like'){
+        post.reactions.dislikes.splice(alreadyDislikedIndex, 1)
+    }
+   
+    await post.save()
+    res.send('added successfully')
+})
 
 
 
