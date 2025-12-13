@@ -128,4 +128,31 @@ postRouter.put("/:id/after-photo", isAuth, upload.single("image"), async (req, r
   }
 });
 
+/* ===========================
+   TOGGLE REACTION (LIKE)
+=========================== */
+postRouter.post('/:id/reactions', async (req, res) => {
+  const { id } = req.params;
+  const { type } = req.body; // we only allow "like" for your case
+
+  if (type !== 'like') return res.status(400).json({ error: "Invalid reaction type" });
+
+  const post = await postModels.findById(id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  const index = post.reactions.likes.findIndex(userId => userId.toString() === req.userId);
+
+  if (index !== -1) {
+    // user already liked → remove
+    post.reactions.likes.splice(index, 1);
+  } else {
+    post.reactions.likes.push(req.userId); // add like
+  }
+
+  await post.save();
+  res.json({ message: "Reaction updated", likes: post.reactions.likes.length });
+});
+
+
+
 module.exports = postRouter;
