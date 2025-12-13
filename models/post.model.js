@@ -27,6 +27,13 @@ const postSchema = new mongoose.Schema(
       ref: "users", // MUST match your user model name
       required: true,
     },
+
+     reactions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "users",
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -128,4 +128,45 @@ postRouter.put("/:id/after-photo", isAuth, upload.single("image"), async (req, r
   }
 });
 
+/* ===========================
+   TOGGLE REACTION (LIKE)
+=========================== */
+postRouter.post("/:id/reaction", isAuth, async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
+  }
+
+  try {
+    const post = await postModels.findById(id);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const userIndex = post.reactions.findIndex(
+      (userId) => userId.toString() === req.userId
+    );
+
+    // 🔁 TOGGLE
+    if (userIndex !== -1) {
+      post.reactions.splice(userIndex, 1); // unlike
+    } else {
+      post.reactions.push(req.userId); // like
+    }
+
+    await post.save();
+
+    res.status(200).json({
+      message: "Reaction updated",
+      likesCount: post.reactions.length,
+      liked: userIndex === -1,
+    });
+  } catch (err) {
+    console.error("POST /:id/reaction error:", err);
+    res.status(500).json({ message: "Server error reacting to post" });
+  }
+});
+
+
 module.exports = postRouter;
