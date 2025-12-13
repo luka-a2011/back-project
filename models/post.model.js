@@ -28,12 +28,10 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
 
-     reactions: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "users",
-      },
-    ],
+    reactions: {
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }]
+}
+
   },
   { timestamps: true }
 );

@@ -131,42 +131,28 @@ postRouter.put("/:id/after-photo", isAuth, upload.single("image"), async (req, r
 /* ===========================
    TOGGLE REACTION (LIKE)
 =========================== */
-postRouter.post("/:id/reaction", isAuth, async (req, res) => {
+postRouter.post('/:id/reactions', async (req, res) => {
   const { id } = req.params;
+  const { type } = req.body; // we only allow "like" for your case
 
-  if (!isValidObjectId(id)) {
-    return res.status(400).json({ message: "Invalid post ID" });
+  if (type !== 'like') return res.status(400).json({ error: "Invalid reaction type" });
+
+  const post = await postModels.findById(id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  const index = post.reactions.likes.findIndex(userId => userId.toString() === req.userId);
+
+  if (index !== -1) {
+    // user already liked → remove
+    post.reactions.likes.splice(index, 1);
+  } else {
+    post.reactions.likes.push(req.userId); // add like
   }
 
-  try {
-    const post = await postModels.findById(id);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    const userIndex = post.reactions.findIndex(
-      (userId) => userId.toString() === req.userId
-    );
-
-    // 🔁 TOGGLE
-    if (userIndex !== -1) {
-      post.reactions.splice(userIndex, 1); // unlike
-    } else {
-      post.reactions.push(req.userId); // like
-    }
-
-    await post.save();
-
-    res.status(200).json({
-      message: "Reaction updated",
-      likesCount: post.reactions.length,
-      liked: userIndex === -1,
-    });
-  } catch (err) {
-    console.error("POST /:id/reaction error:", err);
-    res.status(500).json({ message: "Server error reacting to post" });
-  }
+  await post.save();
+  res.json({ message: "Reaction updated", likes: post.reactions.likes.length });
 });
+
 
 
 module.exports = postRouter;
