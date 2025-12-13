@@ -67,7 +67,7 @@ authRouter.post('/sign-up', async (req, res) => {
 
     const existUser = await userModel.findOne({ email })
     if (existUser) {
-        return res.status(400).json({ message: 'user already exist' })
+        return res.status(400).json({ message: 'user already exists' })
     }
 
     const hashedPass = await bcrypt.hash(password, 10)
