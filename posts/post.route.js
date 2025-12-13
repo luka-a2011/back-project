@@ -3,8 +3,45 @@ const postModels = require("../models/post.model");
 const isAuth = require("../middlewares/isauth.middleware");
 const { upload, deletefromcloudinary } = require("../config/clodinary.config");
 const { isValidObjectId } = require("mongoose");
-
 const postRouter = Router();
+
+
+
+/* ===========================
+   ADD AFTER-PHOTO (UPLOAD MULTIPLE)
+=========================== */
+postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
+
+    const post = await postModels.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ message: "After photos are required" });
+    }
+
+    // Add all uploaded files to afterImages array
+    req.files.forEach(file => post.afterImages.push(file.path));
+
+    await post.save();
+
+    res.json({
+      message: "After photos added successfully",
+      post,
+    });
+  } catch (err) {
+    console.error("PUT /:id/after-photo error:", err);
+    res.status(500).json({ message: "Server error while adding after photos" });
+  }
+});
+
+module.exports = postRouter;
+
 
 /* ===========================
    GET ALL POSTS
@@ -94,63 +131,38 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
    ADD AFTER-PHOTO (UPLOAD)
 =========================== */
 
-postRouter.put("/:id/after-photo", isAuth, upload.single("image"), async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ message: "Invalid post ID" });
-    }
-
-    const post = await postModels.findById(id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
-
-    if (!req.file) {
-      return res.status(400).json({ message: "After photo is required" });
-    }
-
-    // Cloudinary URL
-    const afterImageUrl = req.file.path;
-
-    // Add to array
-    post.afterImages.push(afterImageUrl);
-
-    await post.save();
-
-    res.json({
-      message: "After photo added successfully",
-      post,
-    });
-
-  } catch (err) {
-    console.error("PUT /:id/after-photo error:", err);
-    res.status(500).json({ message: "Server error while adding after photo" });
-  }
-});
 
 /* ===========================
    TOGGLE REACTION (LIKE)
 =========================== */
-postRouter.post('/:id/reactions', async (req, res) => {
-  const { id } = req.params;
-  const { type } = req.body; // we only allow "like" for your case
+postRouter.post('/:id/reactions', isAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.body;
 
-  if (type !== 'like') return res.status(400).json({ error: "Invalid reaction type" });
+    if (type !== 'like') return res.status(400).json({ error: "Invalid reaction type" });
 
-  const post = await postModels.findById(id);
-  if (!post) return res.status(404).json({ error: "Post not found" });
+    const post = await postModels.findById(id);
+    if (!post) return res.status(404).json({ error: "Post not found" });
 
-  const index = post.reactions.likes.findIndex(userId => userId.toString() === req.userId);
+    // Ensure reactions object exists
+    if (!post.reactions) post.reactions = { likes: [] };
 
-  if (index !== -1) {
-    // user already liked → remove
-    post.reactions.likes.splice(index, 1);
-  } else {
-    post.reactions.likes.push(req.userId); // add like
+    const index = post.reactions.likes.findIndex(userId => userId.toString() === req.userId);
+
+    if (index !== -1) {
+      post.reactions.likes.splice(index, 1);
+    } else {
+      post.reactions.likes.push(req.userId);
+    }
+
+    await post.save();
+
+    res.json({ message: "Reaction updated", likes: post.reactions.likes.length });
+  } catch (err) {
+    console.error("Reaction route error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-
-  await post.save();
-  res.json({ message: "Reaction updated", likes: post.reactions.likes.length });
 });
 
 
