@@ -28,16 +28,13 @@ stripeRouter.post("/buy-phone", async (req, res) => {
 });
 
 // Donation route
+// stripe.route.js
 stripeRouter.post("/checkout", isAuth, async (req, res) => {
   const { productName, amount, description } = req.body;
 
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ message: "Invalid donation amount" });
-  }
-
   try {
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      mode: "payment",
       line_items: [
         {
           price_data: {
@@ -46,12 +43,11 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
               name: productName,
               description,
             },
-            unit_amount: amount, // in cents
+            unit_amount: amount,
           },
           quantity: 1,
         },
       ],
-      mode: "payment",
       payment_intent_data: {
         metadata: { userId: req.userId },
       },
@@ -59,19 +55,19 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
       cancel_url: `${process.env.FRONT_END_URL}/?canceled=true`,
     });
 
-    // Save order in database
     await orderModel.create({
       user: req.userId,
       amount,
       sessionId: session.id,
+      paymentIntentId: session.payment_intent,
       status: "PENDING",
     });
 
     res.json({ url: session.url });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Stripe checkout creation failed", error: err.message });
+    res.status(500).json({ message: "Stripe error" });
   }
 });
+
 
 module.exports = stripeRouter;

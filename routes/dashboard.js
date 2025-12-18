@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const userModel = require("../models/users.model");
-const postModel = require("../models/post.model"); 
+const postModel = require("../models/post.model");
+const cleanupModel = require("../models/cleanup.model"); 
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.get("/stats", async (req, res) => {
   try {
     const usersCount = await userModel.countDocuments();
     const reportsCount = await postModel.countDocuments();
-    const cleanupsCount = 0; 
+    const cleanupsCount = await postModel.countDocuments({ afterImages: { $exists: true, $ne: [] } });
 
     res.json({
       users: usersCount,
@@ -21,5 +22,6 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 module.exports = router;

@@ -1,24 +1,31 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
+require("../models/users.model"); // optional, just to ensure model is loaded
+
+const orderSchema = new mongoose.Schema(
+  {
+    sessionId: { type: String, required: true },
+
+    status: { type: String, enum: ["PENDING", "SUCCESS", "REJECTED"], default: "PENDING" },
+
+    amount: { type: Number, required: true },
 
 
-const orderSchema = new mongoose.Schema({
-    sessionId: {
-        type: String,
-        require: true
+    user: { 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users", 
+      required: true,
     },
-    status: {
-        type: String,
-        default: "PENDING",
-        enum: ["PENDING", 'REJECT', 'SUCCESS']
-    },
-    amount: {
-        type: Number,
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
-        default: []
-    },
-}, {timestamps: true})
 
-module.exports = mongoose.model('order', orderSchema)
+
+    report: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "report",
+      required: true,
+    },
+
+    paymentIntentId: String,
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("order", orderSchema);
