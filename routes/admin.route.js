@@ -1,4 +1,8 @@
 const { Router } = require("express");
+require("../models/users.model");   // make sure user model is loaded
+require("../models/order.model");   // make sure order model is loaded
+require("../models/report.model");  // ← add this line to load report schema
+
 const userModel = require("../models/users.model");
 const orderModel = require("../models/order.model");
 const isAuth = require("../middlewares/isauth.middleware");
