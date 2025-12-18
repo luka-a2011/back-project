@@ -17,13 +17,20 @@ const stripeRouter = require("./stripe/stripe.route");
 
 const isAuth = require("./middlewares/isauth.middleware");
 const { upload } = require("./config/clodinary.config");
-
-const stripe = require("./config/stripe.config");
 const orderModel = require("./models/order.model");
+const stripe = require("./config/stripe.config");
 
 const app = express();
 
-/* ================= STRIPE WEBHOOK (MUST BE FIRST) ================= */
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static("uploads"));
+
+// --------------------
+// Stripe Webhook
+// --------------------
 app.post(
   "/stripe/webhook",
   express.raw({ type: "application/json" }),
@@ -42,35 +49,32 @@ app.post(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // ✅ Payment successful
     if (event.type === "checkout.session.completed") {
       await orderModel.findOneAndUpdate(
         { sessionId: event.data.object.id },
-        { status: "PAID" }
+        { status: "SUCCESS" }
       );
     }
 
-    // ❌ Payment failed
     if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object;
-
       const session = await stripe.checkout.sessions.list({
         payment_intent: paymentIntent.id,
       });
 
-      if (session.data.length) {
+      if (session.data.length > 0) {
         await orderModel.findOneAndUpdate(
           { sessionId: session.data[0].id },
-          { status: "FAILED" }
+          { status: "REJECTED" }
         );
       }
     }
 
-    // ⏰ Session expired
     if (event.type === "checkout.session.expired") {
+      const session = event.data.object;
       await orderModel.findOneAndUpdate(
-        { sessionId: event.data.object.id },
-        { status: "FAILED" }
+        { sessionId: session.id },
+        { status: "REJECTED" }
       );
     }
 
@@ -78,17 +82,11 @@ app.post(
   }
 );
 
-/* ================= NORMAL MIDDLEWARE ================= */
-app.use(cors());
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.static("uploads"));
-
-/* ================= SWAGGER ================= */
+// Swagger
 const specs = swaggerJsdoc(swagger);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-/* ================= ROUTES ================= */
+// Routes
 app.use("/auth", authRouter);
 app.use("/posts", postRouter);
 app.use("/api/users", isAuth, userRouter);
@@ -96,7 +94,7 @@ app.use("/admin", adminRouter);
 app.use("/stripe", stripeRouter);
 app.use("/dashboard", dashboardRouter);
 
-/* ================= UPLOAD ================= */
+// File upload
 app.post("/uploads", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   res.status(201).json({ file: req.file });
@@ -106,11 +104,7 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-/* ================= START SERVER ================= */
 const PORT = process.env.PORT || 3000;
-
 connecttodb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
