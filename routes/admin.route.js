@@ -37,12 +37,12 @@ const payments = await orderModel
   .find()
   .populate("user", "fullname email") // donor
   .populate({
-  path: "report",
-  select: "title descriptione author",
-  populate: { path: "author", select: "fullname email" },
-})
-
+    path: "report",
+    select: "title description user",
+    populate: { path: "user", select: "fullname email" }, // report owner
+  })
   .sort({ createdAt: -1 });
+
 
 
     res.json(payments);
