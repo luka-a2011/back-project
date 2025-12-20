@@ -33,18 +33,17 @@ router.get("/payments", isAuth, async (req, res) => {
   if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   try {
-    const payments = await orderModel
-      .find()
-      .populate("user", "fullname email") // donor
-      .populate({
-        path: "post",              // must match orderSchema
-        select: "descriptione author",
-        populate: {
-          path: "author",
-          select: "fullname email", // post author
-        },
-      })
-      .sort({ createdAt: -1 });
+const payments = await orderModel
+  .find()
+  .populate("user", "fullname email") // donor
+  .populate({
+  path: "report",
+  select: "title descriptione author",
+  populate: { path: "author", select: "fullname email" },
+})
+
+  .sort({ createdAt: -1 });
+
 
     res.json(payments);
   } catch (err) {
