@@ -44,6 +44,7 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
       author: req.userId,
       afterImages: [],
       reactions: { likes: [], dislikes: [] },
+      hold: { user: null, expiresAt: null },
     });
 
     res.status(201).json(post);
@@ -54,7 +55,7 @@ postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
 });
 
 /* ===========================
-   ADD AFTER-PHOTO (UPLOAD MULTIPLE)
+   ADD AFTER-PHOTO
 =========================== */
 postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (req, res) => {
   try {
@@ -67,13 +68,25 @@ postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (r
     const post = await postModel.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    // 🔒 HOLD PROTECTION
+    if (
+      post.hold?.user &&
+      post.hold.expiresAt > new Date() &&
+      post.hold.user.toString() !== req.userId
+    ) {
+      return res.status(403).json({ message: "You do not hold this post" });
+    }
+
     if (!req.files || !req.files.length) {
       return res.status(400).json({ message: "After photos are required" });
     }
 
     req.files.forEach((file) => post.afterImages.push(file.path));
-    await post.save();
 
+    // release hold after completion
+    post.hold = { user: null, expiresAt: null };
+
+    await post.save();
     res.json({ message: "After photos added successfully", post });
   } catch (err) {
     console.error("PUT /:id/after-photo error:", err);
@@ -116,7 +129,7 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
 });
 
 /* ===========================
-   TOGGLE REACTIONS (LIKE/DISLIKE)
+   TOGGLE REACTIONS
 =========================== */
 postRouter.post("/:id/reactions", isAuth, async (req, res) => {
   const { id } = req.params;
@@ -151,6 +164,54 @@ postRouter.post("/:id/reactions", isAuth, async (req, res) => {
   } catch (err) {
     console.error("POST /:id/reactions error:", err);
     res.status(500).json({ message: "Server error updating reactions" });
+  }
+});
+
+/* ===========================
+   HOLD POST (3 DAYS)
+=========================== */
+postRouter.put("/:id/hold", isAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
+
+    const post = await postModel.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (post.afterImages?.length) {
+      return res.status(400).json({ message: "Post already completed" });
+    }
+
+    if (
+      post.hold?.user &&
+      post.hold.expiresAt > new Date() &&
+      post.hold.user.toString() !== req.userId
+    ) {
+      return res.status(400).json({ message: "Post is already on hold" });
+    }
+
+    const alreadyHolding = await postModel.findOne({
+      "hold.user": req.userId,
+      "hold.expiresAt": { $gt: new Date() },
+    });
+
+    if (alreadyHolding) {
+      return res.status(400).json({ message: "You can only hold one post at a time" });
+    }
+
+    post.hold = {
+      user: req.userId,
+      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    };
+
+    await post.save();
+    res.json({ message: "Post held successfully", post });
+  } catch (err) {
+    console.error("PUT /:id/hold error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

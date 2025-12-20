@@ -31,7 +31,12 @@ const postSchema = new mongoose.Schema(
  reactions: {
         likes: [{type: mongoose.Schema.Types.ObjectId, ref: 'user'}],
         dislikes: [{type: mongoose.Schema.Types.ObjectId, ref: 'user'}],
-    }
+    },
+    hold: {
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  expiresAt: { type: Date, default: null }
+}
+
 
 
   },
