@@ -45,14 +45,15 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
     });
 
     // Save order to DB
-    await orderModel.create({
-      user: req.userId,
-      report: reportId, // required now
-      amount: amountInt,
-      sessionId: session.id,
-      paymentIntentId: session.payment_intent || undefined,
-      status: "PENDING",
-    });
+ await orderModel.create({
+  user: req.userId,
+  report: reportId, // this is required
+  amount: amountInt,
+  sessionId: session.id,
+  paymentIntentId: session.payment_intent || undefined,
+  status: "PENDING",
+});
+
 
     return res.json({ url: session.url });
   } catch (err) {
