@@ -38,7 +38,7 @@ const payments = await orderModel
   .populate("user", "fullname email") // donor
   .populate({
     path: "report",
-    select: "title description user", // correct fields
+    select: "title user", // <-- correct fields
     populate: { path: "user", select: "fullname email" }, // report owner
   })
   .sort({ createdAt: -1 });
