@@ -26,33 +26,50 @@ postRouter.get("/", async (req, res) => {
 /* ===========================
    CREATE NEW POST
 =========================== */
-postRouter.post("/", isAuth, upload.single("image"), async (req, res) => {
-  try {
-    const { descriptione, Location } = req.body;
+postRouter.post(
+  "/",
+  isAuth,
+  upload.array("image", 10), // ✅ allow up to 10 images
+  async (req, res) => {
+    try {
+      const { descriptione, Location } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "Image is required" });
+      // 🔴 VALIDATIONS
+      if (!req.files || req.files.length < 3) {
+        return res
+          .status(400)
+          .json({ message: "At least 3 images are required" });
+      }
+
+      if (!descriptione || !Location) {
+        return res
+          .status(400)
+          .json({ message: "All fields are required" });
+      }
+
+      // ✅ collect uploaded image URLs
+      const imagePaths = req.files.map((file) => file.path);
+
+      const post = await postModel.create({
+        images: imagePaths, // ✅ ARRAY instead of single image
+        descriptione,
+        Location,
+        author: req.userId,
+        afterImages: [],
+        reactions: { likes: [], dislikes: [] },
+        hold: { user: null, expiresAt: null },
+      });
+
+      res.status(201).json(post);
+    } catch (err) {
+      console.error("POST /posts error:", err);
+      res
+        .status(500)
+        .json({ message: "Server error creating post" });
     }
-    if (!descriptione || !Location) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const post = await postModel.create({
-      image: req.file.path,
-      descriptione,
-      Location,
-      author: req.userId,
-      afterImages: [],
-      reactions: { likes: [], dislikes: [] },
-      hold: { user: null, expiresAt: null },
-    });
-
-    res.status(201).json(post);
-  } catch (err) {
-    console.error("POST /posts error:", err);
-    res.status(500).json({ message: "Server error creating post" });
   }
-});
+);
+
 
 /* ===========================
    ADD AFTER-PHOTO
