@@ -29,8 +29,11 @@ postRouter.get("/", async (req, res) => {
 postRouter.post(
   "/",
   isAuth,
-  upload.array("image", 10), // ✅ allow up to 10 images
+  upload.array("images", 10), // ✅ allow up to 10 images
   async (req, res) => {
+    
+  console.log("FILES:", req.files);
+
     try {
       const { descriptione, Location } = req.body;
 

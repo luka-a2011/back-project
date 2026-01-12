@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema(
   {
-    image: {
-      type: [String],
-      required: true,
-    },
+    images: {
+  type: [String],
+  required: true
+},
     descriptione: {
       type: String,
       required: true,
