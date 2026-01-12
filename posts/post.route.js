@@ -129,13 +129,12 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
       return res.status(401).json({ message: "You don't have permission" });
     }
 
-    if (post.image) {
-      try {
-        await deletefromcloudinary(post.image);
-      } catch (err) {
-        console.warn("Cloudinary delete failed:", err);
-      }
-    }
+    if (post.images?.length) {
+  for (const img of post.images) {
+    await deletefromcloudinary(img);
+  }
+}
+
 
     await postModel.findByIdAndDelete(id);
     res.status(200).json({ message: "Post deleted successfully" });
