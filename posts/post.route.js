@@ -118,26 +118,32 @@ postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (r
    DELETE POST
 =========================== */
 postRouter.delete("/:id", isAuth, async (req, res) => {
-   try {
-    const post = await Post.findById(req.params.id);
+  const { id } = req.params;
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
+  }
+
+  try {
+    const post = await postModel.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (post.author.toString() !== req.userId && req.role !== "admin") {
+      return res.status(401).json({ message: "You don't have permission" });
     }
 
-    const isOwner = post.author.toString() === req.user.id;
-    const isAdmin = req.user.role === "admin";
+    if (post.images?.length) {
+  for (const img of post.images) {
+    await deletefromcloudinary(img);
+  }
+}
 
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
 
-    await post.deleteOne();
-
-    res.json({ message: "Post deleted successfully" });
+    await postModel.findByIdAndDelete(id);
+    res.status(200).json({ message: "Post deleted successfully" });
   } catch (err) {
-    console.error("DELETE POST ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("DELETE /posts/:id error:", err);
+    res.status(500).json({ message: "Server error while deleting post" });
   }
 });
 
