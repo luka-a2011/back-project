@@ -33,17 +33,17 @@ router.get("/payments", isAuth, async (req, res) => {
   if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   try {
-    const payments = await orderModel
-      .find()
-      .populate("user", "fullname email") // donor
-      .populate({
-        path: "report",
-        select: "title user", // get report title + owner
-        populate: { path: "user", select: "fullname email" }, // report owner
-      })
-      .sort({ createdAt: -1 });
+const payments = await orderModel
+  .find()
+  .populate({
+    path: "report",
+    populate: { path: "author", select: "fullname email" },
+  })
+  .populate("user", "fullname email") // donor
+  .lean();
 
-    res.json(payments);
+res.json(payments);
+
   } catch (err) {
     console.error("GET /payments error:", err);
     res.status(500).json({ message: "Server error fetching payments" });
