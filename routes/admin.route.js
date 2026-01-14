@@ -35,14 +35,15 @@ router.get("/payments", isAuth, async (req, res) => {
   try {
 const payments = await orderModel
   .find()
+  .populate("user", "fullname email") // donor
   .populate({
     path: "report",
-    populate: { path: "author", select: "fullname email" },
+    populate: { path: "user", select: "fullname email" }, // ✅ FIXED
   })
-  .populate("user", "fullname email") // donor
   .lean();
 
 res.json(payments);
+
 
   } catch (err) {
     console.error("GET /payments error:", err);
