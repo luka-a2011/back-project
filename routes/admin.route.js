@@ -1,13 +1,14 @@
 const { Router } = require("express");
 const userModel = require("../models/users.model");
-const postModel = require("../models/post.model");
-const cleanupModel = require("../models/cleanup.model"); 
-const isAuth = require("../middlewares/isauth.middleware");
+const orderModel = require("../models/order.model"); // ✅ use correct model
+const postModel = require("../models/post.model"); // optional if you still need posts
 
 const router = Router();
 
-// -------------------- USERS --------------------
-router.get("/users", isAuth, async (req, res) => {
+// ------------------------
+// GET USERS
+// ------------------------
+router.get("/users", async (req, res) => {
   if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   try {
@@ -15,11 +16,14 @@ router.get("/users", isAuth, async (req, res) => {
     res.json({ users });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error fetching users" });
   }
 });
 
-router.delete("/users/:id", isAuth, async (req, res) => {
+// ------------------------
+// DELETE USER
+// ------------------------
+router.delete("/users/:id", async (req, res) => {
   if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   try {
@@ -27,20 +31,22 @@ router.delete("/users/:id", isAuth, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error deleting user" });
   }
 });
 
-// -------------------- PAYMENTS --------------------
-router.get("/payments", isAuth, async (req, res) => {
+// ------------------------
+// GET PAYMENTS / DONATIONS
+// ------------------------
+router.get("/payments", async (req, res) => {
   if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   try {
-    const payments = await cleanupModel
+    const payments = await orderModel
       .find()
       .populate({
-        path: "report",
-        populate: { path: "author", select: "fullname email" },
+        path: "report", // the report associated with the payment
+        populate: { path: "author", select: "fullname email" }, // report owner
       })
       .populate("user", "fullname email") // donor
       .lean();
@@ -49,26 +55,6 @@ router.get("/payments", isAuth, async (req, res) => {
   } catch (err) {
     console.error("GET /payments error:", err);
     res.status(500).json({ message: "Server error fetching payments" });
-  }
-});
-
-// -------------------- STATS --------------------
-router.get("/stats", isAuth, async (req, res) => {
-  if (req.role !== "admin") return res.status(403).json({ message: "Access denied" });
-
-  try {
-    const usersCount = await userModel.countDocuments();
-    const reportsCount = await postModel.countDocuments();
-    const cleanupsCount = await postModel.countDocuments({ afterImages: { $exists: true, $ne: [] } });
-
-    res.json({
-      users: usersCount,
-      reports: reportsCount,
-      cleanups: cleanupsCount,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
   }
 });
 
