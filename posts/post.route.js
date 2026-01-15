@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const postModel = require("../models/post.model"); // fix naming
 const isAuth = require("../middlewares/isauth.middleware");
-const { upload, deletefromcloudinary } = require("../config/clodinary.config");
+const { upload, deleteFromCloudinary } = require("../config/clodinary.config");
 const { isValidObjectId } = require("mongoose");
 
 const postRouter = Router();
@@ -29,32 +29,25 @@ postRouter.get("/", async (req, res) => {
 postRouter.post(
   "/",
   isAuth,
-  upload.array("images", 10), // ✅ allow up to 10 images
+  upload.array("images", 10),
   async (req, res) => {
-    
-  console.log("FILES:", req.files);
+    console.log("FILES:", req.files);
 
     try {
       const { descriptione, Location } = req.body;
 
-      // 🔴 VALIDATIONS
       if (!req.files || req.files.length < 3) {
-        return res
-          .status(400)
-          .json({ message: "At least 3 images are required" });
+        return res.status(400).json({ message: "At least 3 images are required" });
       }
 
       if (!descriptione || !Location) {
-        return res
-          .status(400)
-          .json({ message: "All fields are required" });
+        return res.status(400).json({ message: "All fields are required" });
       }
 
-      // ✅ collect uploaded image URLs
       const imagePaths = req.files.map((file) => file.path);
 
       const post = await postModel.create({
-        images: imagePaths, // ✅ ARRAY instead of single image
+        images: imagePaths,
         descriptione,
         Location,
         author: req.userId,
@@ -66,13 +59,10 @@ postRouter.post(
       res.status(201).json(post);
     } catch (err) {
       console.error("POST /posts error:", err);
-      res
-        .status(500)
-        .json({ message: "Server error creating post" });
+      res.status(500).json({ message: "Server error creating post" });
     }
   }
 );
-
 
 /* ===========================
    ADD AFTER-PHOTO
@@ -88,7 +78,6 @@ postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (r
     const post = await postModel.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // 🔒 HOLD PROTECTION
     if (
       post.hold?.user &&
       post.hold.expiresAt > new Date() &&
@@ -103,7 +92,6 @@ postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (r
 
     req.files.forEach((file) => post.afterImages.push(file.path));
 
-    // release hold after completion
     post.hold = { user: null, expiresAt: null };
 
     await post.save();
@@ -115,9 +103,20 @@ postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (r
 });
 
 /* ===========================
-   DELETE POST
+   DELETE POST ✅ FIXED
 =========================== */
+
+const getPublicIdFromUrl = (url) => {
+  const parts = url.split("/");
+  const filename = parts.pop().split(".")[0];
+  const folder = parts.pop();
+  return `${folder}/${filename}`;
+};
+
 postRouter.delete("/:id", isAuth, async (req, res) => {
+  console.log("DELETE POST HIT", req.params.id);
+  console.log("USER:", req.userId, req.role);
+
   const { id } = req.params;
 
   if (!isValidObjectId(id)) {
@@ -125,27 +124,37 @@ postRouter.delete("/:id", isAuth, async (req, res) => {
   }
 
   try {
+    console.log("Finding post...");
     const post = await postModel.findById(id);
+
+    console.log("POST FOUND:", post);
+
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    if (post.author.toString() !== req.userId && req.role !== "admin") {
+    console.log("POST AUTHOR:", post.author);
+    console.log("REQ USER:", req.userId, "ROLE:", req.role);
+
+    // ✅ SAFE PERMISSION CHECK
+    if (post.author?.toString() !== req.userId && req.role !== "admin") {
       return res.status(401).json({ message: "You don't have permission" });
     }
 
     if (post.images?.length) {
-  for (const img of post.images) {
-    await deletefromcloudinary(img);
-  }
-}
-
+      for (const img of post.images) {
+        const publicId = getPublicIdFromUrl(img);
+        await deleteFromCloudinary(publicId);
+      }
+    }
 
     await postModel.findByIdAndDelete(id);
+
     res.status(200).json({ message: "Post deleted successfully" });
   } catch (err) {
     console.error("DELETE /posts/:id error:", err);
     res.status(500).json({ message: "Server error while deleting post" });
   }
 });
+
 
 /* ===========================
    TOGGLE REACTIONS
