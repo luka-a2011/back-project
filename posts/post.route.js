@@ -243,4 +243,101 @@ postRouter.put("/:id/hold", isAuth, async (req, res) => {
   }
 });
 
+
+
+// Hold a post
+postRouter.put("/:id/hold", isAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await postModel.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Release expired holds
+    if (post.hold?.expiresAt && new Date(post.hold.expiresAt) < new Date()) {
+      post.hold = { user: null, expiresAt: null };
+      await post.save();
+    }
+
+    if (post.hold?.user && post.hold.user.toString() !== req.userId) {
+      return res.status(400).json({ message: "Post already held by someone else" });
+    }
+
+    // Check how many active holds user has
+    const activeHolds = await postModel.countDocuments({
+      "hold.user": req.userId,
+      "hold.expiresAt": { $gt: new Date() }
+    });
+
+    if (activeHolds >= 2) {
+      return res.status(400).json({ message: "You can only hold 2 posts at a time" });
+    }
+
+    // If already held by same user, refresh expiry or just return
+    if (post.hold.user?.toString() === req.userId) {
+      return res.status(200).json({ message: "You are already holding this post", post });
+    }
+
+    post.hold = {
+      user: req.userId,
+      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days
+    };
+
+    await post.save();
+    res.json({ message: "Post held successfully", post });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Unhold a post manually
+postRouter.put("/:id/unhold", isAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await postModel.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Only holder or admin can unhold
+    if (!post.hold.user || (post.hold.user.toString() !== req.userId && req.role !== "admin")) {
+      return res.status(403).json({ message: "You cannot unhold this post" });
+    }
+
+    post.hold = { user: null, expiresAt: null };
+    await post.save();
+    res.json({ message: "Post unheld successfully", post });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+// POST/PUT /posts/:id/unhold
+postRouter.put("/:id/unhold", isAuth, async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid post ID" });
+
+  try {
+    const post = await postModel.findById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (!post.hold?.user || post.hold.user.toString() !== req.userId) {
+      return res.status(403).json({ message: "You cannot unhold this post" });
+    }
+
+    // Remove the hold
+    post.hold = { user: null, expiresAt: null };
+    await post.save();
+
+    res.json({ message: "Post unheld successfully", post });
+  } catch (err) {
+    console.error("PUT /posts/:id/unhold error:", err);
+    res.status(500).json({ message: "Server error unholding post" });
+  }
+});
+
+
 module.exports = postRouter;
