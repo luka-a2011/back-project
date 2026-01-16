@@ -39,4 +39,15 @@ router.get("/leaderboard", async (req, res) => {
   }
 });
 
+// CHECK IF CURRENT USER IS IN COMPETITION
+router.get("/me", isAuth, async (req, res) => {
+  try {
+    const entry = await Competition.findOne({ user: req.userId });
+    res.json({ joined: !!entry });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to check competition status" });
+  }
+});
+
+
 module.exports = router;
