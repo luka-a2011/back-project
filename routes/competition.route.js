@@ -40,15 +40,23 @@ router.get("/me", isAuth, async (req, res) => {
  */
 router.get("/leaderboard", async (req, res) => {
   try {
-    const leaderboard = await Competition.find()
-      .populate("user", "fullname email")
-      .sort({ likes: -1 });
+    const leaderboard = await Competition.find({})
+      .populate({
+        path: "user",
+        select: "fullname email",
+      })
+      .sort({ likes: -1 })
+      .lean();
 
     res.json(leaderboard);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to load leaderboard" });
+    console.error("LEADERBOARD ERROR:", err);
+    res.status(500).json({
+      message: "Failed to load leaderboard",
+      error: err.message,
+    });
   }
 });
+
 
 module.exports = router;
