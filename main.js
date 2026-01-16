@@ -15,6 +15,7 @@ const userRouter = require("./users/user.route");
 const dashboardRouter = require("./routes/dashboard");  
 const adminRouter = require("./routes/admin.route");
 const stripeRouter = require("./stripe/stripe.route");
+const adminRouter = require("./routes/competition.routes");
 
 const isAuth = require("./middlewares/isauth.middleware");
 const { upload } = require("./config/clodinary.config");
@@ -94,6 +95,8 @@ app.use("/api/users", isAuth, userRouter);
 app.use("/admin", adminRouter);
 app.use("/stripe", stripeRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/competition", competitionRoutes);
+
 
 // File upload
 app.post("/uploads", upload.single("image"), (req, res) => {
