@@ -13,6 +13,7 @@ const authRouter = require("./auth/auth.route");
 const postRouter = require("./posts/post.route");
 const userRouter = require("./users/user.route");
 const dashboardRouter = require("./routes/dashboard");
+const competitionRoutes = require("./routes/competition");
 const adminRouter = require("./routes/admin.route");
 const stripeRouter = require("./stripe/stripe.route");
 
@@ -93,6 +94,7 @@ app.use("/posts", postRouter);
 app.use("/api/users", isAuth, userRouter);
 app.use("/admin", adminRouter);
 app.use("/stripe", stripeRouter);
+app.use("/competition", competitionRoutes);
 app.use("/dashboard", dashboardRouter);
 
 // File upload
