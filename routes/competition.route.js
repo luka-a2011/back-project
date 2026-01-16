@@ -41,10 +41,7 @@ router.get("/me", isAuth, async (req, res) => {
 router.get("/leaderboard", async (req, res) => {
   try {
     const leaderboard = await Competition.find({})
-      .populate({
-        path: "user",
-        select: "fullname email",
-      })
+      .populate("user", "fullname email")
       .sort({ likes: -1 })
       .lean();
 
@@ -57,6 +54,8 @@ router.get("/leaderboard", async (req, res) => {
     });
   }
 });
+
+
 
 
 module.exports = router;
