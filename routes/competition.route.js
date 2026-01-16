@@ -14,11 +14,24 @@ router.post("/join", isAuth, async (req, res) => {
       return res.json({ message: "Already joined" });
     }
 
-    await Competition.create({ user: req.userId });
+    await Competition.create({ user: req.userId, likes: 0 });
     res.json({ message: "Joined competition" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Join failed" });
+  }
+});
+
+/**
+ * CHECK CURRENT USER STATUS
+ */
+router.get("/me", isAuth, async (req, res) => {
+  try {
+    const entry = await Competition.findOne({ user: req.userId });
+    res.json({ joined: !!entry });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to check competition status" });
   }
 });
 
