@@ -4,7 +4,9 @@ const Competition = require("../models/competition.model");
 
 const router = Router();
 
-// JOIN COMPETITION
+/* ===============================
+   JOIN COMPETITION
+   =============================== */
 router.post("/join", isAuth, async (req, res) => {
   try {
     const exists = await Competition.findOne({ user: req.userId });
@@ -16,8 +18,24 @@ router.post("/join", isAuth, async (req, res) => {
 
     res.json({ message: "Joined competition" });
   } catch (err) {
-    console.error(err);
+    console.error("Join competition error:", err);
     res.status(500).json({ message: "Failed to join competition" });
+  }
+});
+
+/* ===============================
+   GET LEADERBOARD
+   =============================== */
+router.get("/leaderboard", async (req, res) => {
+  try {
+    const leaderboard = await Competition.find()
+      .populate("user", "fullname email")
+      .sort({ likes: -1 });
+
+    res.json(leaderboard);
+  } catch (err) {
+    console.error("Get leaderboard error:", err);
+    res.status(500).json({ message: "Failed to load leaderboard" });
   }
 });
 
