@@ -35,7 +35,12 @@ const userSchema = new mongoose.Schema({
     token: {
         type: String,
         default: ""
-    }
+    },
+    isCompetitionMember: {
+  type: Boolean,
+  default: false,
+},
+
 });
 
 module.exports = mongoose.model("users", userSchema);

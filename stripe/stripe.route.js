@@ -2,6 +2,7 @@ const { Router } = require("express");
 const stripe = require("../config/stripe.config");
 const isAuth = require("../middlewares/isauth.middleware");
 const orderModel = require("../models/order.model");
+const userModel = require("../models/user.model");
 
 const stripeRouter = Router();
 
@@ -48,8 +49,8 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
           ...(typeNormalized !== "competition" && { reportId }),
         },
       },
-      success_url: `${process.env.FRONT_END_URL}/?success=true`,
-      cancel_url: `${process.env.FRONT_END_URL}/?canceled=true`,
+      success_url: `${process.env.FRONT_END_URL}/payment-success?type=${typeNormalized}`,
+      cancel_url: `${process.env.FRONT_END_URL}/payment-cancel`,
     });
 
     const orderData = {
@@ -66,6 +67,11 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
 
     if (typeNormalized === "competition") {
       orderData.competitionEntry = true;
+
+      // 🔑 GIVE USER COMPETITION ACCESS
+      await userModel.findByIdAndUpdate(req.userId, {
+        isCompetitionMember: true,
+      });
     }
 
     await orderModel.create(orderData);
