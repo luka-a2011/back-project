@@ -12,7 +12,7 @@ const swagger = require("./swagger");
 const authRouter = require("./auth/auth.route");
 const postRouter = require("./posts/post.route");
 const userRouter = require("./users/user.route");
-const dashboardRouter = require("./routes/dashboard");
+const dashboardRouter = require("./routes/dashboard");  
 const adminRouter = require("./routes/admin.route");
 const stripeRouter = require("./stripe/stripe.route");
 
