@@ -9,18 +9,27 @@ const router = Router();
  */
 router.post("/join", isAuth, async (req, res) => {
   try {
+    if (!req.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const exists = await Competition.findOne({ user: req.userId });
     if (exists) {
       return res.json({ message: "Already joined" });
     }
 
-    await Competition.create({ user: req.userId, likes: 0 });
-    res.json({ message: "Joined competition" });
+    const entry = await Competition.create({
+      user: req.userId,
+      likes: 0,
+    });
+
+    res.json({ message: "Joined competition", entry });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Join failed" });
   }
 });
+
 
 /**
  * CHECK CURRENT USER STATUS
@@ -40,19 +49,19 @@ router.get("/me", isAuth, async (req, res) => {
  */
 router.get("/leaderboard", async (req, res) => {
   try {
-    // ✅ SAFE QUERY (NO POPULATE)
-    const leaderboard = await Competition.find({}).lean();
+    const leaderboard = await Competition.find({
+      user: { $ne: null }, // ✅ FILTER BAD RECORDS
+    })
+      .populate("user", "fullname email")
+      .sort({ likes: -1 })
+      .lean();
 
     res.json(leaderboard);
   } catch (err) {
     console.error("LEADERBOARD ERROR:", err);
-    res.status(500).json({
-      message: "Failed to load leaderboard",
-      error: err.message,
-    });
+    res.status(500).json({ message: "Failed to load leaderboard" });
   }
 });
-
 
 /**
  * ⚠️ DEV ONLY — CLEAR COMPETITION COLLECTION
