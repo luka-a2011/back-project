@@ -49,19 +49,31 @@ router.get("/me", isAuth, async (req, res) => {
  */
 router.get("/leaderboard", async (req, res) => {
   try {
-    const leaderboard = await Competition.find({
-      user: { $ne: null }, // ✅ FILTER BAD RECORDS
-    })
-      .populate("user", "fullname email")
+    const leaderboard = await Competition.find({})
+      .populate({
+        path: "user",
+        select: "fullname email",
+      })
       .sort({ likes: -1 })
       .lean();
 
-    res.json(leaderboard);
+    console.log("RAW LEADERBOARD:", leaderboard);
+
+    // 🔥 FILTER BROKEN ENTRIES
+    const cleanLeaderboard = leaderboard.filter(
+      (entry) => entry.user && entry.user.fullname
+    );
+
+    res.json(cleanLeaderboard);
   } catch (err) {
     console.error("LEADERBOARD ERROR:", err);
-    res.status(500).json({ message: "Failed to load leaderboard" });
+    res.status(500).json({
+      message: "Failed to load leaderboard",
+      error: err.message,
+    });
   }
 });
+
 
 /**
  * ⚠️ DEV ONLY — CLEAR COMPETITION COLLECTION
