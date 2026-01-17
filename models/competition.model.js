@@ -4,7 +4,7 @@ const competitionSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // 🔥 MUST MATCH MODEL NAME EXACTLY
+      ref: "User", // 🔥 MUST MATCH MODEL NAME EXACTLY
       required: true,
       unique: true,
     },
