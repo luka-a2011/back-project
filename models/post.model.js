@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const postSchema = new mongoose.Schema(
   {
     images: {
-  type: [String],
-  required: true
-},
+      type: [String],
+      required: true,
+    },
     descriptione: {
       type: String,
       required: true,
@@ -24,21 +24,24 @@ const postSchema = new mongoose.Schema(
 
     author: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // MUST match your user model name
+      ref: "User", // match your user model
       required: true,
     },
 
- reactions: {
-        likes: [{type: mongoose.Schema.Types.ObjectId, ref: 'user'}],
-        dislikes: [{type: mongoose.Schema.Types.ObjectId, ref: 'user'}],
+    authorEmail: { // <-- new field
+      type: String,
+      default: "",
     },
+
+    reactions: {
+      likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    },
+
     hold: {
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-  expiresAt: { type: Date, default: null }
-}
-
-
-
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      expiresAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

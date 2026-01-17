@@ -160,10 +160,13 @@ authRouter.post('/sign-in', async (req, res) => {
         return res.status(400).json({ message: 'emial or password is invalid' })
     }
 
-    const payload = {
-        userId: existUser._id,
-        role: existUser.role
-    }
+const payload = {
+  userId: existUser._id,
+  email: existUser.email,
+  fullname: existUser.fullname,
+  role: existUser.role,
+};
+
 
     const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' })
 

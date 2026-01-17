@@ -47,15 +47,21 @@ postRouter.post(
 
       const imagePaths = req.files.map((file) => file.path);
 
-      const post = await postModel.create({
-        images: imagePaths,
-        descriptione,
-        Location,
-        author: req.userId,
-        afterImages: [],
-        reactions: { likes: [], dislikes: [] },
-        hold: { user: null, expiresAt: null },
-      });
+      // Fetch logged-in user's email
+      const user = await require("../models/users.model").findById(req.userId);
+
+const post = await postModel.create({
+  images: imagePaths,
+  descriptione,
+  Location,
+  author: req.userId,
+  authorEmail: req.user.email, 
+  afterImages: [],
+  reactions: { likes: [], dislikes: [] },
+  hold: { user: null, expiresAt: null },
+});
+
+
 
       res.status(201).json(post);
     } catch (err) {
@@ -65,43 +71,36 @@ postRouter.post(
   }
 );
 
+
 /* ===========================
    ADD AFTER-PHOTO
 =========================== */
 postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ message: "Invalid post ID" });
-    }
-
     const post = await postModel.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
-
-    if (
-      post.hold?.user &&
-      post.hold.expiresAt > new Date() &&
-      post.hold.user.toString() !== req.userId
-    ) {
-      return res.status(403).json({ message: "You do not hold this post" });
-    }
 
     if (!req.files || !req.files.length) {
       return res.status(400).json({ message: "After photos are required" });
     }
 
+    // Push new images
     req.files.forEach((file) => post.afterImages.push(file.path));
 
-    post.hold = { user: null, expiresAt: null };
+    // Set the user who uploaded after photo
+    post.afterUploader = req.userId;
 
+    post.hold = { user: null, expiresAt: null };
     await post.save();
+
     res.json({ message: "After photos added successfully", post });
   } catch (err) {
     console.error("PUT /:id/after-photo error:", err);
     res.status(500).json({ message: "Server error while adding after photos" });
   }
 });
+
 
 /* ===========================
    DELETE POST ✅ FIXED

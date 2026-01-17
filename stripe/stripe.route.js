@@ -32,7 +32,7 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
               name: productName,
               description: description || "",
             },
-            unit_amount: amountInt,
+            unit_amount: amountInt * 100, // amount in cents
           },
           quantity: 1,
         },
@@ -45,15 +45,14 @@ stripeRouter.post("/checkout", isAuth, async (req, res) => {
     });
 
     // Save order to DB
- await orderModel.create({
-  user: req.userId,
-  report: reportId, // this is required
-  amount: amountInt,
-  sessionId: session.id,
-  paymentIntentId: session.payment_intent || undefined,
-  status: "PENDING",
-});
-
+    await orderModel.create({
+      user: req.userId,        // donor
+      report: reportId,        // report
+      amount: amountInt * 100, // save in cents
+      status: "PENDING",
+      sessionId: session.id,
+      paymentIntentId: session.payment_intent || undefined,
+    });
 
     return res.json({ url: session.url });
   } catch (err) {
