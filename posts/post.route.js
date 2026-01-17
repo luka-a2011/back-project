@@ -3,8 +3,6 @@ const postModel = require("../models/post.model"); // fix naming
 const isAuth = require("../middlewares/isauth.middleware");
 const { upload, deleteFromCloudinary } = require("../config/clodinary.config");
 const { isValidObjectId } = require("mongoose");
-const Competition = require("../models/competition.model");
-
 
 const postRouter = Router();
 
@@ -52,18 +50,16 @@ postRouter.post(
       // Fetch logged-in user's email
       const user = await require("../models/users.model").findById(req.userId);
 
-const post = await postModel.create({
-  images: imagePaths,
-  descriptione,
-  Location,
-  author: req.userId,
-  authorEmail: req.user.email, 
-  afterImages: [],
-  reactions: { likes: [], dislikes: [] },
-  hold: { user: null, expiresAt: null },
-});
-
-
+      const post = await postModel.create({
+        images: imagePaths,
+        descriptione,
+        Location,
+        author: req.userId,
+        authorEmail: user?.email || "", // <-- Save email here
+        afterImages: [],
+        reactions: { likes: [], dislikes: [] },
+        hold: { user: null, expiresAt: null },
+      });
 
       res.status(201).json(post);
     } catch (err) {
@@ -80,29 +76,37 @@ const post = await postModel.create({
 postRouter.put("/:id/after-photo", isAuth, upload.array("afterImages"), async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
+
     const post = await postModel.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (
+      post.hold?.user &&
+      post.hold.expiresAt > new Date() &&
+      post.hold.user.toString() !== req.userId
+    ) {
+      return res.status(403).json({ message: "You do not hold this post" });
+    }
 
     if (!req.files || !req.files.length) {
       return res.status(400).json({ message: "After photos are required" });
     }
 
-    // Push new images
     req.files.forEach((file) => post.afterImages.push(file.path));
 
-    // Set the user who uploaded after photo
-    post.afterUploader = req.userId;
-
     post.hold = { user: null, expiresAt: null };
-    await post.save();
 
+    await post.save();
     res.json({ message: "After photos added successfully", post });
   } catch (err) {
     console.error("PUT /:id/after-photo error:", err);
     res.status(500).json({ message: "Server error while adding after photos" });
   }
 });
-
 
 /* ===========================
    DELETE POST ✅ FIXED
@@ -171,66 +175,31 @@ postRouter.post("/:id/reactions", isAuth, async (req, res) => {
   }
 
   try {
-    // 🔑 populate author so we know who owns the post
-    const post = await postModel.findById(id).populate("author");
+    const post = await postModel.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    const likedIndex = post.reactions.likes.findIndex(
-      (u) => u.toString() === req.userId
-    );
-    const dislikedIndex = post.reactions.dislikes.findIndex(
-      (u) => u.toString() === req.userId
-    );
-
-    let addedLike = false; // ⭐ TRACK IF LIKE WAS ADDED
+    const likedIndex = post.reactions.likes.findIndex((u) => u.toString() === req.userId);
+    const dislikedIndex = post.reactions.dislikes.findIndex((u) => u.toString() === req.userId);
 
     if (type === "like") {
-      if (likedIndex === -1) {
-        post.reactions.likes.push(req.userId);
-        addedLike = true; // ✅ NEW LIKE
-      } else {
-        post.reactions.likes.splice(likedIndex, 1); // unlike
-      }
-
-      if (dislikedIndex !== -1) {
-        post.reactions.dislikes.splice(dislikedIndex, 1);
-      }
+      if (likedIndex === -1) post.reactions.likes.push(req.userId);
+      else post.reactions.likes.splice(likedIndex, 1);
+      if (dislikedIndex !== -1) post.reactions.dislikes.splice(dislikedIndex, 1);
     }
 
     if (type === "dislike") {
-      if (dislikedIndex === -1) {
-        post.reactions.dislikes.push(req.userId);
-      } else {
-        post.reactions.dislikes.splice(dislikedIndex, 1);
-      }
-
-      if (likedIndex !== -1) {
-        post.reactions.likes.splice(likedIndex, 1);
-      }
+      if (dislikedIndex === -1) post.reactions.dislikes.push(req.userId);
+      else post.reactions.dislikes.splice(dislikedIndex, 1);
+      if (likedIndex !== -1) post.reactions.likes.splice(likedIndex, 1);
     }
 
     await post.save();
-
-    // 🔥 UPDATE LEADERBOARD ONLY IF:
-    // - a like was ADDED
-    // - post has an author
-    if (addedLike && post.author?._id) {
-      await Competition.findOneAndUpdate(
-        { user: post.author._id },
-        { $inc: { likes: 1 } }
-      );
-    }
-
-    res.json({
-      message: "Reaction updated successfully",
-      reactions: post.reactions,
-    });
+    res.json({ message: "Reaction updated successfully", reactions: post.reactions });
   } catch (err) {
     console.error("POST /:id/reactions error:", err);
     res.status(500).json({ message: "Server error updating reactions" });
   }
 });
-
 
 /* ===========================
    HOLD POST (3 DAYS)
