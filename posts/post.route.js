@@ -3,6 +3,8 @@ const postModel = require("../models/post.model"); // fix naming
 const isAuth = require("../middlewares/isauth.middleware");
 const { upload, deleteFromCloudinary } = require("../config/clodinary.config");
 const { isValidObjectId } = require("mongoose");
+const Competition = require("../models/competition.model");
+
 
 const postRouter = Router();
 
@@ -169,31 +171,66 @@ postRouter.post("/:id/reactions", isAuth, async (req, res) => {
   }
 
   try {
-    const post = await postModel.findById(id);
+    // 🔑 populate author so we know who owns the post
+    const post = await postModel.findById(id).populate("author");
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    const likedIndex = post.reactions.likes.findIndex((u) => u.toString() === req.userId);
-    const dislikedIndex = post.reactions.dislikes.findIndex((u) => u.toString() === req.userId);
+    const likedIndex = post.reactions.likes.findIndex(
+      (u) => u.toString() === req.userId
+    );
+    const dislikedIndex = post.reactions.dislikes.findIndex(
+      (u) => u.toString() === req.userId
+    );
+
+    let addedLike = false; // ⭐ TRACK IF LIKE WAS ADDED
 
     if (type === "like") {
-      if (likedIndex === -1) post.reactions.likes.push(req.userId);
-      else post.reactions.likes.splice(likedIndex, 1);
-      if (dislikedIndex !== -1) post.reactions.dislikes.splice(dislikedIndex, 1);
+      if (likedIndex === -1) {
+        post.reactions.likes.push(req.userId);
+        addedLike = true; // ✅ NEW LIKE
+      } else {
+        post.reactions.likes.splice(likedIndex, 1); // unlike
+      }
+
+      if (dislikedIndex !== -1) {
+        post.reactions.dislikes.splice(dislikedIndex, 1);
+      }
     }
 
     if (type === "dislike") {
-      if (dislikedIndex === -1) post.reactions.dislikes.push(req.userId);
-      else post.reactions.dislikes.splice(dislikedIndex, 1);
-      if (likedIndex !== -1) post.reactions.likes.splice(likedIndex, 1);
+      if (dislikedIndex === -1) {
+        post.reactions.dislikes.push(req.userId);
+      } else {
+        post.reactions.dislikes.splice(dislikedIndex, 1);
+      }
+
+      if (likedIndex !== -1) {
+        post.reactions.likes.splice(likedIndex, 1);
+      }
     }
 
     await post.save();
-    res.json({ message: "Reaction updated successfully", reactions: post.reactions });
+
+    // 🔥 UPDATE LEADERBOARD ONLY IF:
+    // - a like was ADDED
+    // - post has an author
+    if (addedLike && post.author?._id) {
+      await Competition.findOneAndUpdate(
+        { user: post.author._id },
+        { $inc: { likes: 1 } }
+      );
+    }
+
+    res.json({
+      message: "Reaction updated successfully",
+      reactions: post.reactions,
+    });
   } catch (err) {
     console.error("POST /:id/reactions error:", err);
     res.status(500).json({ message: "Server error updating reactions" });
   }
 });
+
 
 /* ===========================
    HOLD POST (3 DAYS)
