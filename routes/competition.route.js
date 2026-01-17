@@ -40,10 +40,8 @@ router.get("/me", isAuth, async (req, res) => {
  */
 router.get("/leaderboard", async (req, res) => {
   try {
-    const leaderboard = await Competition.find({})
-      .populate("user", "fullname email")
-      .sort({ likes: -1 })
-      .lean();
+    // ✅ SAFE QUERY (NO POPULATE)
+    const leaderboard = await Competition.find({}).lean();
 
     res.json(leaderboard);
   } catch (err) {
@@ -54,6 +52,21 @@ router.get("/leaderboard", async (req, res) => {
     });
   }
 });
+
+
+/**
+ * ⚠️ DEV ONLY — CLEAR COMPETITION COLLECTION
+ */
+router.delete("/__dev/clear", async (req, res) => {
+  try {
+    await Competition.deleteMany({});
+    res.json({ message: "Competition collection cleared" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to clear competition" });
+  }
+});
+
 
 
 
